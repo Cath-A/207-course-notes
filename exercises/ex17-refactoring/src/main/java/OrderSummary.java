@@ -42,6 +42,9 @@ import java.util.Locale;
  * Statements.
  */
 public class OrderSummary {
+  public static final double DISCOUNT = 0.10;
+  public static final double DISCOUNT_MIN = 200.0;
+  public static final double TAX = 0.13;
 
   /**
    * Builds a human-readable, multi-line summary of an order.
@@ -56,45 +59,69 @@ public class OrderSummary {
    * @return the formatted summary, with lines separated by {@code \n}
    */
   public static String summarize(String customer, String[] itemNames, double[] itemPrices) {
-    // TODO (Slide Statements, 13.6): these three declarations are a long way from
-    //      the code that first uses them. Slide each one down to its first use.
-    double subtotal = 0.0;
-    int premiumCount = 0;
-    double discount = 0.0;
+    double subtotal = getSubtotal(itemPrices);
+    int premiumCount = getPremiumCount(itemPrices);
+    double discount = getDiscount(subtotal);
 
-    // TODO (Split Loop, 13.5): this single loop does two unrelated jobs —
-    //      accumulating the subtotal and counting premium items. Split it into
-    //      two loops, then consider Extract Method (13.2) on each one.
-    for (int i = 0; i < itemPrices.length; i++) {
-      subtotal += itemPrices[i];
-      if (itemPrices[i] >= 100.0) {
-        premiumCount++;
-      }
-    }
-
-    // TODO: replace the magic numbers below with named constants.
-    if (subtotal > 200.0) {
-      discount = subtotal * 0.10;
-    }
     double taxable = subtotal - discount;
-    double tax = taxable * 0.13;
+    double tax = taxable * TAX;
     double total = taxable + tax;
 
     // TODO (Extract Method, 13.2): everything from here down is one job —
     //      formatting the report. Pull it out into its own well-named method
     //      (and the per-item line into a second one).
-    StringBuilder report = new StringBuilder();
-    report.append("Order summary for ").append(customer).append("\n");
-    report.append("----------------------\n");
-    for (int i = 0; i < itemNames.length; i++) {
-      report.append(String.format(Locale.US, "%s: $%.2f\n", itemNames[i], itemPrices[i]));
-    }
+    StringBuilder report = createReport(customer, itemNames, itemPrices, premiumCount, subtotal, discount, tax, total);
+    return report.toString();
+  }
+
+  private static StringBuilder createReport(String customer, String[] itemNames, double[] itemPrices, int premiumCount, double subtotal, double discount, double tax, double total) {
+    StringBuilder report = createReport(customer);
+    ListItems(itemNames, itemPrices, report);
     report.append(String.format(Locale.US, "Items: %d\n", itemNames.length));
     report.append(String.format(Locale.US, "Premium items: %d\n", premiumCount));
     report.append(String.format(Locale.US, "Subtotal: $%.2f\n", subtotal));
     report.append(String.format(Locale.US, "Discount: $%.2f\n", discount));
     report.append(String.format(Locale.US, "Tax: $%.2f\n", tax));
     report.append(String.format(Locale.US, "Total: $%.2f", total));
-    return report.toString();
+    return report;
+  }
+
+  private static void ListItems(String[] itemNames, double[] itemPrices, StringBuilder report) {
+    for (int i = 0; i < itemNames.length; i++) {
+      report.append(String.format(Locale.US, "%s: $%.2f\n", itemNames[i], itemPrices[i]));
+    }
+  }
+
+  private static StringBuilder createReport(String customer) {
+    StringBuilder report = new StringBuilder();
+    report.append("Order summary for ").append(customer).append("\n");
+    report.append("----------------------\n");
+    return report;
+  }
+
+  private static double getDiscount(double subtotal) {
+    double discount = 0.0;
+    if (subtotal > DISCOUNT_MIN) {
+      discount = subtotal * DISCOUNT;
+    }
+    return discount;
+  }
+
+  private static int getPremiumCount(double[] itemPrices) {
+    int premiumCount = 0;
+    for (int i = 0; i < itemPrices.length; i++) {
+      if (itemPrices[i] >= 100.0) {
+        premiumCount++;
+      }
+    }
+    return premiumCount;
+  }
+
+  private static double getSubtotal(double[] itemPrices) {
+    double subtotal = 0.0;
+    for (int i = 0; i < itemPrices.length; i++) {
+      subtotal += itemPrices[i];
+    }
+    return subtotal;
   }
 }
